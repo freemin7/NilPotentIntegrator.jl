@@ -34,13 +34,15 @@ struct NilPotentLinearOperator{T,AType<:AbstractMatrix{T},F,C}  <: AbstractDiffE
         else
             n = max(size(A)...)
             sim = deepcopy(A) # TODO necessary?
+            sim2 = deepcopy(A)
             i = 1;
-            while !iszero(sim)
-                mul!(sim,sim,A); # That doesn't work
+            while !iszero(sim2)
+                mul!(sim,sim2,A); # That doesn't work
+                sim2, sim = sim, sim2
                 i += 1;
                 (i > n) && throw("Matrix not nil potent") # I trusted you.
             end
-            new{eltype(A),AType,typeof(update_func),Missing}(A, update_func, missing, i)
+            new{eltype(A),AType,typeof(update_func),Bool}(A, update_func, false, i)
         end
     end
 end
@@ -78,7 +80,7 @@ ArrayInterface.issingular(L::NilPotentLinearOperator) = ArrayInterface.issingula
 # https://github.com/SciML/DiffEqBase.jl/blob/52bcd26cbbf64a43228286b5eb91d60c2e917d00/src/operators/diffeq_operator.jl#L50-L55
 
 
-function LinearAlgebra.exp(L::NilPotentLinearOperator,t)
+function LinearAlgebra.exp(L::NilPotentLinearOperator{T,AType,F,C},t)  where {T,AType,F,C<:Vector}
     acc = I + (L.A * t)
     f = 1
     tc = t
@@ -90,7 +92,7 @@ function LinearAlgebra.exp(L::NilPotentLinearOperator,t)
     return acc
 end#
 
-function expmv(L::NilPotentLinearOperator,u,p,t)
+function expmv(L::NilPotentLinearOperator{T,AType,F,C},u,p,t)  where {T,AType,F,C<:Vector}
     acc = (L.A * t)
     f = 1
     tc = t
@@ -101,7 +103,7 @@ function expmv(L::NilPotentLinearOperator,u,p,t)
     end
     return acc*u .+ u
 end#
-function expmv!(v,L::NilPotentLinearOperator,u,p,t)
+function expmv!(v,L::NilPotentLinearOperator{T,AType,F,C},u,p,t)  where {T,AType,F,C<:Vector}
     v .= u
     @simd for i=1:L.index
         @inbounds v .+= t^i/(factorial(i))*L.cache[i]*u
@@ -109,8 +111,42 @@ function expmv!(v,L::NilPotentLinearOperator,u,p,t)
     v
 end
 
-function LinearAlgebra.exp(L::NilPotentLinearOperator{T,AType,F,C},t) where {T,AType,F,C<:Missing}
-    throw("Not implemeted")
+function LinearAlgebra.exp(L::NilPotentLinearOperator{T,AType,F,C},t) where {T,AType,F,C<:Bool}
+    acc = I + (L.A * t)
+    mul = L.A
+    f = 1
+    tc = t
+    @simd for i=2:L.index
+        mul = mul * L.A
+        f *= i
+        tc *= t
+        acc .+= tc/(f)*mul
+    end
+    return acc
+end
+
+function expmv(L::NilPotentLinearOperator{T,AType,F,C},u,p,t) where {T,AType,F,C<:Bool}
+    acc = (L.A * t)
+    acc2 = (L.A * t)
+    acc3 = (L.A * t)
+    f = 1
+    @simd for i=2:L.index
+        f *= i
+        acc3 .= acc3 * acc2
+        acc .+= acc3/f
+    end
+    return acc*u .+ u
+end#
+function expmv!(v,L::NilPotentLinearOperator{T,AType,F,C},u,p,t) where {T,AType,F,C<:Bool}
+    v .= u
+    acc2 = (L.A * t)
+    acc3 = (L.A * t)
+    v .+= acc2 * u
+    @simd for i=2:L.index
+        acc3 .= acc3 * acc2
+        v .+= acc3*(u/(factorial(i)))
+    end
+    v
 end
 
 end # module
