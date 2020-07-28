@@ -20,7 +20,7 @@ v = rand(5)
 @test isapprox(expmv(NPLO,v,[],80.0),exp(a*80.0)*v)
 v2 = rand(5)
 expmv!(v2,NPLO,v,[],80.0)
-@test_broken isapprox(expmv(NPLO,v,[],80.0),v2) # out of place doesn't work?
+@test isapprox(expmv(NPLO,v,[],80.0),v2) # out of place doesn't work?
 
 using BenchmarkTools
 

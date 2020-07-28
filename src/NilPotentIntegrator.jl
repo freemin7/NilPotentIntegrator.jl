@@ -45,6 +45,9 @@ struct NilPotentLinearOperator{T,AType<:AbstractMatrix{T},F,C}  <: AbstractDiffE
     end
 end
 
+(L::NilPotentLinearOperator)(u,p,t) = (update_coefficients!(L,u,p,t); expmv(L,u,p,t))
+(L::NilPotentLinearOperator)(du,u,p,t) = (update_coefficients!(L,u,p,t); expmv!(du,L,u,p,t))
+
 # Taken without question from: https://github.com/watsona4/dot_julia/blob/36266326353f14d6899db1edd2dd2b685dda392b/packages/DiffEqBase/LCorD/src/operators/diffeq_operator.jl#L14
 Base.eltype(L::NilPotentLinearOperator{T,AType,F,C}) where {T,AType,F,C} = T
 
@@ -99,9 +102,9 @@ function expmv(L::NilPotentLinearOperator,u,p,t)
     return acc*u + u
 end#
 function expmv!(v,L::NilPotentLinearOperator,u,p,t)
-    v = u
+    v .= u
     for i=1:L.index
-        v += t^i/(factorial(i))*L.cache[i]*u
+        v .+= t^i/(factorial(i))*L.cache[i]*u
     end
     v
 end
