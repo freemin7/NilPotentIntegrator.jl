@@ -77,16 +77,24 @@ ArrayInterface.issingular(L::NilPotentLinearOperator) = ArrayInterface.issingula
 
 function LinearAlgebra.exp(L::NilPotentLinearOperator,t)
     acc = I + (L.A * t)
+    f = 1
+    tc = t
     for i=2:L.index
-        acc += t^i/(factorial(i))*L.cache[i]
+        f *= i
+        tc *= t
+        acc += tc/(f)*L.cache[i]
     end
     return acc
 end#
 
 function expmv(L::NilPotentLinearOperator,u,p,t)
     acc = (L.A * t)
+    f = 1
+    tc = t
     for i=2:L.index
-        acc += t^i/(factorial(i))*L.cache[i]
+        f *= i
+        tc *= t
+        acc += tc/(f)*L.cache[i]
     end
     return acc*u + u
 end#
