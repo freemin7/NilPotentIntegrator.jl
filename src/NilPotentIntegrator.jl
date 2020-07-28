@@ -82,10 +82,10 @@ function LinearAlgebra.exp(L::NilPotentLinearOperator,t)
     acc = I + (L.A * t)
     f = 1
     tc = t
-    for i=2:L.index
+    @simd for i=2:L.index
         f *= i
         tc *= t
-        acc += tc/(f)*L.cache[i]
+        @inbounds acc .+= tc/(f)*L.cache[i]
     end
     return acc
 end#
@@ -94,17 +94,17 @@ function expmv(L::NilPotentLinearOperator,u,p,t)
     acc = (L.A * t)
     f = 1
     tc = t
-    for i=2:L.index
+    @simd for i=2:L.index
         f *= i
         tc *= t
-        acc += tc/(f)*L.cache[i]
+        @inbounds acc .+= tc/(f)*L.cache[i]
     end
-    return acc*u + u
+    return acc*u .+ u
 end#
 function expmv!(v,L::NilPotentLinearOperator,u,p,t)
     v .= u
-    for i=1:L.index
-        v .+= t^i/(factorial(i))*L.cache[i]*u
+    @simd for i=1:L.index
+        @inbounds v .+= t^i/(factorial(i))*L.cache[i]*u
     end
     v
 end
