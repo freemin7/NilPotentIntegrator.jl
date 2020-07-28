@@ -4,7 +4,7 @@ using LinearAlgebra, Random
 using BenchmarkTools
 
 # https://github.com/SciML/OrdinaryDiffEq.jl/blob/5a5d88748550f3b69a0d1a89ec3619e0cc0b8417/test/algconvergence/linear_method_tests.jl#L5-L16
-
+Random.seed!(42)
 n = 150
 
 M = zeros(n,n)
@@ -25,9 +25,28 @@ println("Nilpotent Integrator krylov=:off")
 @time sol1 = solve(prob, LinearExponential(krylov=:off))(100.0)
 @test isapprox(sol1, sol_analytic, rtol=1e-10)
 
+println("Nilpotent Integrator krylov=:off fixed timestep 20.0")
+@time sol1 = solve(prob, LinearExponential(krylov=:off), adaptive=false, dt = 20.0)(100.0)
+@test isapprox(sol1, sol_analytic, rtol=1e-10)
+
+
+println("Nilpotent Integrator krylov=:off adaptive timestep 20.0")
+@time sol1 = solve(prob, LinearExponential(krylov=:off),  dt = 20.0)(100.0)
+@test isapprox(sol1, sol_analytic, rtol=1e-10)
+
 println("Nilpotent Integrator krylov=:simple")
 @time sol2 = solve(prob, LinearExponential(krylov=:simple))(100.0)
 @test isapprox(sol2, sol_analytic, rtol=1e-10)
+
+
+println("Nilpotent Integrator krylov=:simple fixed timestep 20.0 ")
+@time sol2 = solve(prob, LinearExponential(krylov=:simple), adaptive=false, dt = 20.0)(100.0)
+@test isapprox(sol2, sol_analytic, rtol=1e-10)
+
+println("Nilpotent Integrator krylov=:simple adaptive timestep 20.0 ")
+@time sol2 = solve(prob, LinearExponential(krylov=:simple), dt = 20.0)(100.0)
+@test isapprox(sol2, sol_analytic, rtol=1e-10)
+
 
 println("Nilpotent analytic")
 @btime sol4 = expmv(A,u0,[],100.0)
