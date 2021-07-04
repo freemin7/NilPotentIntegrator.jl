@@ -81,8 +81,10 @@ function expmv(L::NilPotentLinearOperator{T,AType,F,C},u,p,t)  where {T,AType,F,
 end#
 function expmv!(v,L::NilPotentLinearOperator{T,AType,F,C},u,p,t)  where {T,AType,F,C<:Vector}
     v .= u
+    f = 1.0
     @simd for i=1:L.index
-        @inbounds v .+= t^i/(factorial(i))*L.cache[i]*u
+        f *= i;
+        @inbounds v .+= t^i/f*L.cache[i]*u
     end
     v
 end
@@ -96,7 +98,7 @@ function LinearAlgebra.exp(L::NilPotentLinearOperator{T,AType,F,C},t) where {T,A
         mul = mul * L.A
         f *= i
         tc *= t
-        acc .+= tc/(f)*mul
+        acc .+= tc/f*mul
     end
     return acc
 end
@@ -105,7 +107,7 @@ function expmv(L::NilPotentLinearOperator{T,AType,F,C},u,p,t) where {T,AType,F,C
     acc = (L.A * t)
     acc2 = (L.A * t)
     acc3 = (L.A * t)
-    f = 1
+    f = 1.0
     @simd for i=2:L.index
         f *= i
         acc3 .= acc3 * acc2
@@ -118,9 +120,11 @@ function expmv!(v,L::NilPotentLinearOperator{T,AType,F,C},u,p,t) where {T,AType,
     acc2 = (L.A * t)
     acc3 = (L.A * t)
     v .+= acc2 * u
+    f = 1.0
     @simd for i=2:L.index
+    	f *= i;
         acc3 .= acc3 * acc2
-        v .+= acc3*(u/(factorial(i)))
+        v .+= acc3*(u/i)
     end
     v
 end
